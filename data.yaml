@@ -1,12 +1,28 @@
-path: ''
+path: D:/Downloads/mini/yolo_proper
 train: images/train
 val: images/val
-test: null
+test:
 names:
-  0: exit
-  1: fireextinguisher
-  2: chair
-  3: clock
-  4: trashbin
-  5: screen
-  6: printer
+  0: adult
+  1: child
+  2: wheelchair
+  3: stroller
+  4: personal_mobility
+  5: police_officer
+  6: construction_worker
+  7: animal
+  8: vehicle.car
+  9: motorcycle
+  10: bicycle
+  11: bus.bendy
+  12: bus.rigid
+  13: truck
+  14: construction_vehicle
+  15: ambulance
+  16: police_vehicle
+  17: trailer
+  18: barrier
+  19: trafficcone
+  20: pushable_pullable
+  21: debris
+  22: bicycle_rack

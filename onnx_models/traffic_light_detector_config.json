@@ -1,0 +1,59 @@
+{
+  "method": "HSV_color_space",
+  "description": "Traffic light color detection using HSV thresholding",
+  "color_ranges": {
+    "red": {
+      "hue": [
+        0,
+        10,
+        170,
+        180
+      ],
+      "saturation": [
+        100,
+        255
+      ],
+      "value": [
+        100,
+        255
+      ]
+    },
+    "yellow": {
+      "hue": [
+        20,
+        30
+      ],
+      "saturation": [
+        100,
+        255
+      ],
+      "value": [
+        100,
+        255
+      ]
+    },
+    "green": {
+      "hue": [
+        40,
+        80
+      ],
+      "saturation": [
+        100,
+        255
+      ],
+      "value": [
+        100,
+        255
+      ]
+    }
+  },
+  "preprocessing": {
+    "color_space": "BGR_to_HSV",
+    "gaussian_blur": [
+      5,
+      5
+    ],
+    "morphology": "closing"
+  },
+  "notes": "Normalized HSV ranges (H: 0-180, S: 0-255, V: 0-255 in OpenCV)"
+}

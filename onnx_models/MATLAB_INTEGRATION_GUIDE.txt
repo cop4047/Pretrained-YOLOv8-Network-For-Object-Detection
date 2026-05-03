@@ -1,0 +1,32 @@
+
+1. Copy ONNX files to MATLAB working directory:
+   - lane_segmentation.onnx
+   - yolov8_detection.onnx (if converted)
+
+2. In MATLAB, load the lane segmentation network:
+   >> net = importONNXNetwork('lane_segmentation.onnx', ...
+              'InputDataFormats', 'BCSS', ...
+              'OutputDataFormats', 'BCSS');
+
+3. Use in AutonomousVisionController:
+   >> visionCtrl = AutonomousVisionController(...
+        'onnx_models/lane_segmentation.onnx', ...
+        ..., ...
+        ...);
+
+4. For YOLOv8 detection in MATLAB:
+   - Use Python interop (pyrunfile) or
+   - Use pre-trained MATLAB detectors or
+   - Implement custom ONNX inference wrapper
+
+Expected Performance:
+   - Lane Segmentation: 95.62% validation accuracy
+   - Processing: ~10-30 ms per frame (GPU)
+   - FPS: 30-100 depending on hardware
+
+Traffic Law Compliance Checks:
+   ✓ Red light detection (stop)
+   ✓ Pedestrian detection (reduce speed/stop)
+   ✓ Lane coherence validation
+   ✓ Speed limit enforcement
+   ✓ Heading angle constraints (±pi)

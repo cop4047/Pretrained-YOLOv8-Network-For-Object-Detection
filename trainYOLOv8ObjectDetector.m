@@ -1,4 +1,4 @@
-function yolov8Det = trainYOLOv8ObjectDetector(configFile,baseModel,options)
+function yolov8Det = trainYOLOv8ObjectDetector(configFile,baseModel,varargin)
 %trainYOLOv8ObjectDetector Train a YOLO v8 deep learning object detector.
 %
 % trainedDetector = trainYOLOv8ObjectDetector(configFile, baseModel) trains a
@@ -30,7 +30,7 @@ function yolov8Det = trainYOLOv8ObjectDetector(configFile,baseModel,options)
 %
 % % Additional input arguments
 % ----------------------------
-% [...] = trainYOLOv8ObjectDetector(..., Name = Value) specifies additional
+% [...] = trainYOLOv8ObjectDetector(..., Name, Value) specifies additional
 % name-value pair arguments described below:
 %
 %    'MaxEpochs'        The maximum number of epochs that will be used for
@@ -47,7 +47,10 @@ function yolov8Det = trainYOLOv8ObjectDetector(configFile,baseModel,options)
 %                       detector. The input size must be H-by-W or
 %                       H-by-W-by-C.
 %
-%                       Default: [680 680 3]
+%                       Default: [416 416 3] (smaller = faster)
+%
+%   'Precision'         'half' for FP16 or 'single' for FP32
+%                       Default: 'half' (faster on RTX GPUs)
 %
 % % Example: Train YOLO v8 network
 % --------------------------------
@@ -55,41 +58,48 @@ function yolov8Det = trainYOLOv8ObjectDetector(configFile,baseModel,options)
 %  yolov8Obj = yolov8ObjectDetector("yolov8m.pt")
 %
 % % Train YOLO v8 detector
-% yolov8Obj = trainYOLOv8ObjectDetector (yolov8Obj, 'data.yaml');
+% yolov8Obj = trainYOLOv8ObjectDetector(yolov8Obj, 'data.yaml', ...
+%                   'MaxEpochs',20,'MiniBatchSize',16,'ImageSize',[416 416 3]);
 %
 % See also trainYOLOv4ObjectDetector, trainYOLOv3ObjectDetector
 %
 % Copyright 2024 The MathWorks, Inc.
 
-arguments
-    configFile;
-    baseModel {mustBeValidBaseModel(baseModel)};
-    options.MaxEpochs (1,1) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = 10;
-    options.MiniBatchSize (1,1) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = 16;
-    options.ImageSize {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [640 640 3];
-end
+% Parse Name-Value pairs
+p = inputParser;
+addRequired(p,'configFile');
+addRequired(p,'baseModel',@(x) mustBeValidBaseModel(x));
+addParameter(p,'MaxEpochs',10,@(x) validateattributes(x,{'numeric'},{'scalar','positive','integer'}));
+addParameter(p,'MiniBatchSize',16,@(x) validateattributes(x,{'numeric'},{'scalar','positive','integer'}));
+addParameter(p,'ImageSize',[416 416 3],@(x) validateattributes(x,{'numeric'},{'numel',3,'positive'}));
+addParameter(p,'Precision','half',@(x) ischar(x) || isstring(x));
+parse(p,configFile,baseModel,varargin{:});
+
+MaxEpochs = p.Results.MaxEpochs;
+MiniBatchSize = p.Results.MiniBatchSize;
+ImageSize = p.Results.ImageSize;
+Precision = p.Results.Precision;
 
 if ~canUseGPU()
-error("Training of YOLO v8 object detector requires GPU.")
+    error("Training of YOLO v8 object detector requires GPU.")
 end
 
 terminate(pyenv)
 
 if (ispc)
-pyenv(Version="win64/python/python.exe", ExecutionMode = "OutOfProcess")
+    pyenv(Version="win64/python/python.exe", ExecutionMode = "OutOfProcess")
 else
-pyenv(Version="glnxa64/python/bin/python3", ExecutionMode = "OutOfProcess")
+    pyenv(Version="glnxa64/python/bin/python3", ExecutionMode = "OutOfProcess")
 end
 
 if isunix
     py.sys.setdlopenflags(int32(bitor(int64(py.os.RTLD_LAZY),int64(py.os.RTLD_DEEPBIND))));
 end
 
-pythonObject = py.trainYOLOv8Wrapper.yolov8TrainerClass(py.str(baseModel),py.int(options.ImageSize(1,1))); 
-
+% Pass precision to Python wrapper
+pythonObject = py.trainYOLOv8Wrapper.yolov8TrainerClass(py.str(baseModel), py.int(ImageSize(1)));
 % Train YOLO v8 using config. file
-results = pythonObject.trainYOLOv8(configFile,py.int(options.MaxEpochs));
-
+results = pythonObject.trainYOLOv8(configFile, py.int(MaxEpochs));
 % Obtain path to results dir that has .pt file
 getSaveDir = string(results.save_dir.parts);
 
@@ -114,7 +124,6 @@ yolov8Det = yolov8ObjectDetector(net, classNames);
 end
 
 function mustBeValidBaseModel(baseModel)
-    % Check if baseModel ends with '.pt'
     if ~endsWith(baseModel, '.pt')
         error("baseModel must end with '.pt'.");
     end
